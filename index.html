@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mahjong Chip Counter</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a212b;
+    --panel-2: #222c38;
+    --line: #2e3a48;
+    --text: #e6edf3;
+    --muted: #8b98a5;
+    --accent: #2dd4a7;
+    --accent-dim: #1f9e7d;
+    --pos: #34d399;
+    --neg: #f87171;
+    --gold: #e0b341;
+    --shadow: 0 8px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #16202b, var(--bg));
+    color: var(--text);
+    min-height: 100vh;
+    padding: 28px 16px 64px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 {
+    font-size: 26px; margin: 0 0 22px; letter-spacing: .3px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  h1 .pip {
+    width: 24px; height: 24px; border-radius: 50%; flex: none;
+    background: radial-gradient(circle at 38% 32%, #41e6b8, var(--accent-dim));
+    border: 2px dashed rgba(6,35,27,.5);
+    box-shadow: 0 0 0 1px var(--accent), 0 3px 8px rgba(0,0,0,.45);
+  }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 20px; margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 15px; margin: 0 0 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  input[type="text"], input[type="number"], select {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--line);
+    color: var(--text); border-radius: 8px; padding: 9px 11px; font-size: 14px;
+    outline: none; transition: border-color .15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,212,167,.15); }
+  /* hide number-input spinner arrows (still editable) */
+  input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 12px; }
+  button {
+    cursor: pointer; border: none; border-radius: 9px; font-size: 14px; font-weight: 600;
+    padding: 10px 16px; color: #06231b; background: var(--accent);
+    transition: transform .08s, background .15s;
+  }
+  button:hover { background: var(--accent-dim); }
+  button:active { transform: translateY(1px); }
+  button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  button.ghost:hover { color: var(--text); border-color: var(--accent); }
+  button.danger { background: transparent; color: var(--neg); border: 1px solid #4a2b2b; }
+  button.danger:hover { background: #2a1a1a; }
+
+  /* scoreboard */
+  .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .card-head h2 { margin: 0; }
+  button.small { padding: 6px 12px; font-size: 12px; }
+  .board { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+  .pcard {
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #26313e, var(--panel-2));
+    border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 14px; text-align: center;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .pcard.leader {
+    border-color: rgba(224,179,65,.5);
+    box-shadow: 0 0 0 1px rgba(224,179,65,.3), 0 8px 22px rgba(0,0,0,.4);
+  }
+  .pcard .name { font-weight: 700; font-size: 15px; margin-bottom: 10px; position: relative; }
+  .pcard .total { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; position: relative; }
+  .pcard .delta {
+    display: inline-block; margin-top: 9px; padding: 3px 11px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; position: relative;
+  }
+  .pcard .delta.pos { background: rgba(52,211,153,.15); }
+  .pcard .delta.neg { background: rgba(248,113,113,.15); }
+  .pcard .delta.muted { background: rgba(255,255,255,.05); }
+  .pos { color: var(--pos); }
+  .neg { color: var(--neg); }
+  /* spoiler blur */
+  .pcard .total, .pcard .delta { transition: filter .18s; }
+  .board.hide-totals .pcard { cursor: pointer; }
+  .board.hide-totals .pcard .total { filter: blur(11px); }
+  .board.hide-totals .pcard .delta { filter: blur(7px); }
+  .board.hide-totals .pcard:not(.revealed) .delta {
+    color: var(--muted); background: rgba(255,255,255,.05);
+  }
+  .board.hide-totals .pcard.revealed .total,
+  .board.hide-totals .pcard.revealed .delta { filter: none; }
+  .board.hide-totals .pcard:not(.revealed)::after {
+    content: "tap to peek"; position: absolute; left: 0; right: 0; bottom: 8px;
+    font-size: 10px; letter-spacing: .5px; color: var(--muted); text-transform: uppercase;
+  }
+
+  @media (max-width: 560px) {
+    .board { grid-template-columns: repeat(2, 1fr); }
+    .pcard { padding: 14px 10px; }
+    .pcard .total { font-size: 26px; }
+    .pcard .name { font-size: 14px; }
+  }
+
+  /* payment table */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 8px 10px; text-align: center; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  td.tai { color: var(--gold); font-weight: 700; }
+
+  .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg button {
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--line);
+    font-weight: 600; padding: 8px 14px;
+  }
+  .seg button.on { background: var(--accent); color: #06231b; border-color: var(--accent); }
+
+  .taipick { display: flex; gap: 8px; flex-wrap: wrap; }
+  .taipick button {
+    width: 46px; height: 46px; padding: 0; font-size: 18px;
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+  }
+  .taipick button.on { background: var(--gold); color: #2a1f00; border-color: var(--gold); }
+
+  .checkrow { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--text); font-size: 14px; }
+  .checkrow input { width: auto; }
+
+  .log-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px;
+    background: var(--panel-2); margin-bottom: 8px; font-size: 13px;
+  }
+  .log-item .desc { color: var(--text); }
+  .log-item .amt { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .hidden { display: none; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .spacer { flex: 1; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .settle-line {
+    display: flex; justify-content: space-between; padding: 8px 0;
+    border-bottom: 1px solid var(--line); font-size: 15px;
+  }
+  .settle-line strong { font-variant-numeric: tabular-nums; }
+  .pay-instr { font-size: 14px; padding: 8px 12px; background: var(--panel-2); border-radius: 8px; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="pip"></span> Mahjong Chip Counter</h1>
+
+  <!-- SETUP -->
+  <div class="card" id="setupCard">
+    <h2>Setup</h2>
+    <div class="grid4" id="setupGrid"></div>
+    <div class="row" style="margin-top:14px; max-width:260px;">
+      <div>
+        <label>Starting chips (each)</label>
+        <input type="number" inputmode="numeric" id="startChips" value="500" />
+      </div>
+    </div>
+    <div class="actions" style="margin-top:16px;">
+      <button id="startBtn">Start game</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div id="gameArea" class="hidden">
+    <!-- scoreboard -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Standings</h2>
+        <button class="ghost small" id="hideBtn">Hide totals</button>
+      </div>
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- instant payments -->
+    <div class="card">
+      <h2>Instant payment (during play)</h2>
+      <div class="row">
+        <div>
+          <label>Event</label>
+          <select id="instEvent"></select>
+        </div>
+        <div>
+          <label>Collector (gains)</label>
+          <select id="instCollector"></select>
+        </div>
+        <div id="instPayerWrap">
+          <label>Payer</label>
+          <select id="instPayer"></select>
+        </div>
+        <div style="max-width:90px;">
+          <label>× count</label>
+          <input type="number" id="instCount" value="1" min="1" />
+        </div>
+      </div>
+      <div id="instPreview" class="hint"></div>
+      <div class="actions">
+        <button id="instBtn">Add payment</button>
+      </div>
+    </div>
+
+    <!-- record a hand -->
+    <div class="card">
+      <h2>Record a hand</h2>
+
+      <label>Win type</label>
+      <div class="seg" id="winType">
+        <button data-v="ron" class="on">Hu</button>
+        <button data-v="zimo">Zimo</button>
+      </div>
+
+      <div class="row" style="margin-top:14px;">
+        <div>
+          <label>Winner</label>
+          <select id="winner"></select>
+        </div>
+        <div id="shooterWrap">
+          <label>Shooter (discarder)</label>
+          <select id="shooter"></select>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <label>Tai</label>
+        <div class="taipick" id="taiPick"></div>
+      </div>
+
+      <div class="checkrow hidden" id="baoWrap">
+        <input type="checkbox" id="bao" />
+        <label for="bao" style="margin:0;">Bao — one player liable, pays all 3 zimo shares alone</label>
+      </div>
+      <div class="row hidden" id="baoPlayerWrap" style="margin-top:10px;">
+        <div>
+          <label>Liable player</label>
+          <select id="baoPlayer"></select>
+        </div>
+      </div>
+
+      <div id="previewLine" class="hint"></div>
+
+      <div class="actions">
+        <button id="recordBtn">Record hand</button>
+        <button class="ghost" id="undoBtn">Undo last</button>
+      </div>
+    </div>
+
+    <!-- history -->
+    <div class="card">
+      <h2>History</h2>
+      <div id="log"><div class="muted" style="font-size:13px;">No hands yet.</div></div>
+    </div>
+
+    <!-- settle -->
+    <div class="card">
+      <h2>Settle up</h2>
+      <div class="actions" style="margin-bottom:8px;">
+        <button id="settleBtn">Settle up</button>
+        <button class="ghost" id="resetBtn">New game</button>
+      </div>
+      <div id="settleOut"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SEATS = ["東", "南", "西", "北"];
+const ronPay  = t => 4 * Math.pow(2, t - 1);   // 4,8,16,32,64
+const zimoPay = t => 2 * Math.pow(2, t - 1);    // 2,4,8,16,32
+
+// Instant side-payments. mode "each" = each of 3 opponents pays amt; "one" = a single chosen payer pays amt.
+const INSTANT = {
+  yaoTarget:      { label: "Yao (targeted) — one player pays", amt: 2, mode: "one" },
+  yaoGangAll:     { label: "Yao/Gang (everyone) — each opponent pays", amt: 2, mode: "each" },
+  anyaoAngangAll: { label: "Anyao/Angang (everyone) — each opponent pays", amt: 4, mode: "each" },
+  anyaoTarget:    { label: "Anyao (targeted) — one player pays", amt: 4, mode: "one" },
+  gangDiscard:    { label: "Gang — one player pays", amt: 6, mode: "one" },
+};
+
+let state = {
+  players: [],     // {name, chips, start}
+  log: [],         // {type, winner, shooter, tai, bao, baoPlayer, deltas, desc}
+  started: false,
+  selTai: 1,
+  selType: "ron",
+  hideTotals: false,
+  revealed: new Set(),
+};
+
+// ---------- setup UI ----------
+function buildSetup() {
+  const grid = document.getElementById("setupGrid");
+  grid.innerHTML = "";
+  SEATS.forEach((s, i) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<label>Player ${i+1} · <span style="color:var(--gold)">${s}</span></label>
+      <input type="text" id="pname${i}" placeholder="Name" />`;
+    grid.appendChild(div);
+  });
+}
+
+// ---------- start game ----------
+function startGame() {
+  const start = parseInt(document.getElementById("startChips").value) || 0;
+  state.players = SEATS.map((s, i) => {
+    const name = (document.getElementById("pname"+i).value || s).trim() || s;
+    return { name, seat: s, chips: start, start };
+  });
+  state.log = [];
+  state.started = true;
+  document.getElementById("setupCard").classList.add("hidden");
+  document.getElementById("gameArea").classList.remove("hidden");
+  fillSelects();
+  buildTaiPick();
+  buildInstantEvents();
+  render();
+}
+
+function buildInstantEvents() {
+  const sel = document.getElementById("instEvent");
+  sel.innerHTML = "";
+  Object.entries(INSTANT).forEach(([k, v]) => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = `${v.label} (${v.amt})`;
+    sel.appendChild(o);
+  });
+  toggleInstPayer();
+}
+
+function fillSelects() {
+  ["winner","shooter","baoPlayer","instCollector","instPayer"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    state.players.forEach((p, i) => {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = `${p.name} (${p.seat})`;
+      sel.appendChild(o);
+    });
+  });
+  document.getElementById("shooter").value = 1;
+}
+
+function buildTaiPick() {
+  const tp = document.getElementById("taiPick");
+  tp.innerHTML = "";
+  for (let t = 1; t <= 5; t++) {
+    const b = document.createElement("button");
+    b.textContent = t;
+    if (t === state.selTai) b.classList.add("on");
+    b.onclick = () => { state.selTai = t; buildTaiPick(); updatePreview(); };
+    tp.appendChild(b);
+  }
+}
+
+// ---------- win type toggle ----------
+document.getElementById("winType").addEventListener("click", e => {
+  if (e.target.tagName !== "BUTTON") return;
+  state.selType = e.target.dataset.v;
+  [...document.querySelectorAll("#winType button")].forEach(b =>
+    b.classList.toggle("on", b.dataset.v === state.selType));
+  const isZimo = state.selType === "zimo";
+  document.getElementById("shooterWrap").classList.toggle("hidden", isZimo);
+  document.getElementById("baoWrap").classList.toggle("hidden", !isZimo);
+  if (!isZimo) document.getElementById("bao").checked = false;
+  toggleBaoPlayer();
+  updatePreview();
+});
+
+document.getElementById("bao").addEventListener("change", () => { toggleBaoPlayer(); updatePreview(); });
+function toggleBaoPlayer() {
+  const show = state.selType === "zimo" && document.getElementById("bao").checked;
+  document.getElementById("baoPlayerWrap").classList.toggle("hidden", !show);
+}
+
+["winner","shooter","baoPlayer"].forEach(id =>
+  document.getElementById(id).addEventListener("change", updatePreview));
+
+// ---------- compute a hand's deltas ----------
+function computeDeltas(type, winnerIdx, shooterIdx, tai, bao, baoIdx) {
+  const d = [0,0,0,0];
+  if (type === "ron") {
+    const amt = ronPay(tai);
+    d[winnerIdx] += amt;
+    d[shooterIdx] -= amt;
+  } else {
+    const amt = zimoPay(tai);
+    if (bao) {
+      d[winnerIdx] += 3 * amt;
+      d[baoIdx]    -= 3 * amt;
+    } else {
+      d[winnerIdx] += 3 * amt;
+      for (let i = 0; i < 4; i++) if (i !== winnerIdx) d[i] -= amt;
+    }
+  }
+  return d;
+}
+
+function describe(type, winnerIdx, shooterIdx, tai, bao, baoIdx) {
+  const nm = i => state.players[i].name;
+  if (type === "ron")
+    return `${nm(winnerIdx)} Hu off ${nm(shooterIdx)} · ${tai} tai`;
+  if (bao)
+    return `${nm(winnerIdx)} Zimo · ${tai} tai · Bao on ${nm(baoIdx)}`;
+  return `${nm(winnerIdx)} Zimo · ${tai} tai`;
+}
+
+function updatePreview() {
+  if (!state.started) return;
+  const type = state.selType;
+  const w = +document.getElementById("winner").value;
+  const s = +document.getElementById("shooter").value;
+  const bao = document.getElementById("bao").checked;
+  const bi = +document.getElementById("baoPlayer").value;
+  const line = document.getElementById("previewLine");
+
+  if (type === "ron" && w === s) {
+    line.textContent = "⚠ Winner and shooter can't be the same player.";
+    return;
+  }
+  if (type === "zimo" && bao && bi === w) {
+    line.textContent = "⚠ Liable (bao) player can't be the winner.";
+    return;
+  }
+  const amt = type === "ron" ? ronPay(state.selTai) : zimoPay(state.selTai);
+  const gain = type === "ron" ? amt : 3 * amt;
+  line.textContent = `Winner gains ${gain} chips${type === "zimo" && !bao ? ` (each opponent pays ${amt})` : ""}.`;
+}
+
+// ---------- record / undo ----------
+function recordHand() {
+  const type = state.selType;
+  const w = +document.getElementById("winner").value;
+  const s = +document.getElementById("shooter").value;
+  const tai = state.selTai;
+  const bao = state.selType === "zimo" && document.getElementById("bao").checked;
+  const bi = +document.getElementById("baoPlayer").value;
+
+  if (type === "ron" && w === s) { alert("Winner and shooter can't be the same player."); return; }
+  if (type === "zimo" && bao && bi === w) { alert("Liable (bao) player can't be the winner."); return; }
+
+  const deltas = computeDeltas(type, w, s, tai, bao, bi);
+  deltas.forEach((dv, i) => state.players[i].chips += dv);
+
+  state.log.push({
+    kind: "win", deltas, gain: deltas[w],
+    desc: describe(type, w, s, tai, bao, bi)
+  });
+  render();
+}
+
+// ---------- instant payments ----------
+function instInputs() {
+  return {
+    key: document.getElementById("instEvent").value,
+    collector: +document.getElementById("instCollector").value,
+    payer: +document.getElementById("instPayer").value,
+    count: Math.max(1, parseInt(document.getElementById("instCount").value) || 1),
+  };
+}
+
+function toggleInstPayer() {
+  const { key } = instInputs();
+  const isOne = INSTANT[key].mode === "one";
+  document.getElementById("instPayerWrap").classList.toggle("hidden", !isOne);
+  updateInstPreview();
+}
+
+function computeInstant(key, collector, payer, count) {
+  const ev = INSTANT[key];
+  const amt = ev.amt * count;
+  const d = [0,0,0,0];
+  if (ev.mode === "one") {
+    d[collector] += amt;
+    d[payer]     -= amt;
+  } else {
+    d[collector] += 3 * amt;
+    for (let i = 0; i < 4; i++) if (i !== collector) d[i] -= amt;
+  }
+  return d;
+}
+
+function updateInstPreview() {
+  if (!state.started) return;
+  const { key, collector, payer, count } = instInputs();
+  const ev = INSTANT[key];
+  const line = document.getElementById("instPreview");
+  const amt = ev.amt * count;
+  const nm = i => state.players[i].name;
+  if (ev.mode === "one") {
+    if (collector === payer) { line.textContent = "⚠ Collector and payer can't be the same player."; return; }
+    line.textContent = `${nm(payer)} pays ${nm(collector)} ${amt} chips.`;
+  } else {
+    line.textContent = `${nm(collector)} collects ${amt} from each opponent (+${3*amt} total).`;
+  }
+}
+
+function recordInstant() {
+  const { key, collector, payer, count } = instInputs();
+  const ev = INSTANT[key];
+  if (ev.mode === "one" && collector === payer) {
+    alert("Collector and payer can't be the same player."); return;
+  }
+  const deltas = computeInstant(key, collector, payer, count);
+  deltas.forEach((dv, i) => state.players[i].chips += dv);
+  const nm = i => state.players[i].name;
+  const cnt = count > 1 ? ` ×${count}` : "";
+  const desc = `${ev.label}${cnt} → ${nm(collector)}`;
+  state.log.push({ kind: "instant", deltas, gain: deltas[collector], desc });
+  render();
+}
+
+function undoLast() {
+  const last = state.log.pop();
+  if (!last) return;
+  last.deltas.forEach((dv, i) => state.players[i].chips -= dv);
+  render();
+}
+
+// ---------- render ----------
+function render() {
+  // scoreboard
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  board.classList.toggle("hide-totals", state.hideTotals);
+  const totals = state.players.map(p => p.chips);
+  const maxC = Math.max(...totals);
+  const allEqual = totals.every(t => t === totals[0]);
+  state.players.forEach((p, idx) => {
+    const delta = p.chips - p.start;
+    const cls = delta > 0 ? "pos" : delta < 0 ? "neg" : "muted";
+    const sign = delta > 0 ? "+" : "";
+    const deltaText = delta === 0 ? "–" : `${sign}${delta}`;
+    const div = document.createElement("div");
+    div.className = "pcard"
+      + (!state.hideTotals && !allEqual && p.chips === maxC ? " leader" : "")
+      + (state.hideTotals && state.revealed.has(idx) ? " revealed" : "");
+    if (state.hideTotals) {
+      div.onclick = () => {
+        if (state.revealed.has(idx)) state.revealed.delete(idx);
+        else state.revealed.add(idx);
+        render();
+      };
+    }
+    div.innerHTML = `<div class="name">${p.name}</div>
+      <div class="total">${p.chips}</div>
+      <div class="delta ${cls}">${deltaText}</div>`;
+    board.appendChild(div);
+  });
+
+  // log
+  const log = document.getElementById("log");
+  if (!state.log.length) {
+    log.innerHTML = `<div class="muted" style="font-size:13px;">No hands yet.</div>`;
+  } else {
+    log.innerHTML = "";
+    [...state.log].reverse().forEach((h, ri) => {
+      const realIdx = state.log.length - 1 - ri;
+      const item = document.createElement("div");
+      item.className = "log-item";
+      item.innerHTML = `<span class="desc"><span class="muted">#${realIdx+1}</span> &nbsp;${h.desc}</span>
+        <span class="amt">+${h.gain}</span>`;
+      log.appendChild(item);
+    });
+  }
+  updatePreview();
+  updateInstPreview();
+}
+
+// ---------- settle ----------
+function settle() {
+  const out = document.getElementById("settleOut");
+  const bal = state.players.map(p => ({ name: p.name, net: p.chips - p.start, chips: p.chips }));
+
+  let html = `<div style="margin-bottom:12px;">`;
+  bal.forEach(b => {
+    const cls = b.net > 0 ? "pos" : b.net < 0 ? "neg" : "muted";
+    const sign = b.net > 0 ? "+" : "";
+    html += `<div class="settle-line"><span>${b.name}</span>
+      <strong class="${cls}">${sign}${b.net} <span class="muted">(${b.chips} chips)</span></strong></div>`;
+  });
+  html += `</div>`;
+
+  // who pays whom — greedy settlement
+  const debtors = bal.filter(b => b.net < 0).map(b => ({...b, net: -b.net})).sort((a,b)=>b.net-a.net);
+  const creditors = bal.filter(b => b.net > 0).map(b => ({...b})).sort((a,b)=>b.net-a.net);
+  const transfers = [];
+  let di = 0, ci = 0;
+  while (di < debtors.length && ci < creditors.length) {
+    const pay = Math.min(debtors[di].net, creditors[ci].net);
+    transfers.push(`${debtors[di].name} pays ${creditors[ci].name} <strong>${pay}</strong>`);
+    debtors[di].net -= pay; creditors[ci].net -= pay;
+    if (debtors[di].net === 0) di++;
+    if (creditors[ci].net === 0) ci++;
+  }
+
+  if (transfers.length) {
+    html += `<div style="margin:6px 0 4px; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1px;">Payments</div>`;
+    transfers.forEach(t => html += `<div class="pay-instr">${t}</div>`);
+  } else {
+    html += `<div class="pay-instr">Everyone is even — no payments needed.</div>`;
+  }
+  out.innerHTML = html;
+}
+
+// ---------- wire up ----------
+document.getElementById("instEvent").addEventListener("change", toggleInstPayer);
+["instCollector","instPayer","instCount"].forEach(id =>
+  document.getElementById(id).addEventListener("input", updateInstPreview));
+document.getElementById("instBtn").onclick = recordInstant;
+
+document.getElementById("hideBtn").onclick = () => {
+  state.hideTotals = !state.hideTotals;
+  state.revealed.clear();
+  document.getElementById("hideBtn").textContent = state.hideTotals ? "Show totals" : "Hide totals";
+  render();
+};
+
+document.getElementById("startBtn").onclick = startGame;
+document.getElementById("recordBtn").onclick = recordHand;
+document.getElementById("undoBtn").onclick = undoLast;
+document.getElementById("settleBtn").onclick = settle;
+document.getElementById("resetBtn").onclick = () => {
+  if (!confirm("Start a new game? Current standings will be cleared.")) return;
+  state.started = false;
+  document.getElementById("gameArea").classList.add("hidden");
+  document.getElementById("setupCard").classList.remove("hidden");
+  document.getElementById("settleOut").innerHTML = "";
+};
+
+buildSetup();
+</script>
+</body>
+</html>
