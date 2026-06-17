@@ -2,7 +2,7 @@
 
 A simple, self-contained chip counter for mahjong — for when you're playing without physical chips. Track each player's running total, record wins and side-payments, and settle up at the end.
 
-**Live:** https://0goy0.github.io/mahjong-counter/
+**Live:** https://0goy0.github.io/mahjong-counter/?v=2
 
 It's a single `index.html` file (HTML + CSS + JavaScript, no dependencies, no backend). It runs entirely in the browser and works offline if you open the file directly.
 
