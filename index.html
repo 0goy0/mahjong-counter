@@ -34,12 +34,7 @@
     font-size: 26px; margin: 0; letter-spacing: .3px;
     display: flex; align-items: center; gap: 12px;
   }
-  h1 .pip {
-    width: 24px; height: 24px; border-radius: 50%; flex: none;
-    background: radial-gradient(circle at 38% 32%, #41e6b8, var(--accent-dim));
-    border: 2px dashed rgba(6,35,27,.5);
-    box-shadow: 0 0 0 1px var(--accent), 0 3px 8px rgba(0,0,0,.45);
-  }
+  h1 .pip { font-size: 26px; line-height: 1; flex: none; }
   .sub { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
   .card {
     background: var(--panel); border: 1px solid var(--line);
@@ -232,7 +227,7 @@
 <body>
 <div class="wrap">
   <div class="app-head">
-    <h1><span class="pip"></span> Mahjong Chip Counter</h1>
+    <h1><span class="pip">🀄</span> Mahjong Chip Counter</h1>
     <button class="ghost small" id="rulesBtn">⚙ Scoring</button>
   </div>
 
