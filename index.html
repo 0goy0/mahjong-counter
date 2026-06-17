@@ -29,8 +29,9 @@
     padding: 28px 16px 64px;
   }
   .wrap { max-width: 880px; margin: 0 auto; }
+  .app-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; gap: 12px; }
   h1 {
-    font-size: 26px; margin: 0 0 22px; letter-spacing: .3px;
+    font-size: 26px; margin: 0; letter-spacing: .3px;
     display: flex; align-items: center; gap: 12px;
   }
   h1 .pip {
@@ -98,6 +99,21 @@
   .pcard .delta.muted { background: rgba(255,255,255,.05); }
   .pos { color: var(--pos); }
   .neg { color: var(--neg); }
+  /* win/loss flash */
+  @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes flashPos {
+    0% { box-shadow: inset 0 0 0 999px rgba(52,211,153,0); }
+    25% { box-shadow: inset 0 0 0 999px rgba(52,211,153,.22); }
+    100% { box-shadow: inset 0 0 0 999px rgba(52,211,153,0); }
+  }
+  @keyframes flashNeg {
+    0% { box-shadow: inset 0 0 0 999px rgba(248,113,113,0); }
+    25% { box-shadow: inset 0 0 0 999px rgba(248,113,113,.22); }
+    100% { box-shadow: inset 0 0 0 999px rgba(248,113,113,0); }
+  }
+  .pcard.flash-pos { animation: flashPos .7s ease; }
+  .pcard.flash-neg { animation: flashNeg .7s ease; }
+  .pcard.flash-pos .total, .pcard.flash-neg .total { animation: pop .5s ease; }
   /* spoiler blur */
   .pcard .total, .pcard .delta { transition: filter .18s; }
   .board.hide-totals .pcard { cursor: pointer; }
@@ -150,25 +166,85 @@
   }
   .log-item .desc { color: var(--text); }
   .log-item .amt { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .log-right { display: flex; align-items: center; gap: 10px; flex: none; }
+  .del-x {
+    background: transparent; border: 1px solid var(--line); color: var(--muted);
+    border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 700;
+  }
+  .del-x:hover { color: var(--neg); border-color: #4a2b2b; }
+  .resume-bar {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: rgba(45,212,167,.1); border: 1px solid var(--accent-dim);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px;
+  }
+  .resume-bar .ra { display: flex; gap: 8px; flex: none; }
   .muted { color: var(--muted); }
   .hidden { display: none; }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
   .spacer { flex: 1; }
   .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
-  .settle-line {
-    display: flex; justify-content: space-between; padding: 8px 0;
-    border-bottom: 1px solid var(--line); font-size: 15px;
+  .settle-sub { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 4px 0 10px; }
+  .settle-result {
+    display: flex; align-items: center; gap: 10px; padding: 11px 13px;
+    border: 1px solid var(--line); border-radius: 11px; background: var(--panel-2); margin-bottom: 8px;
   }
-  .settle-line strong { font-variant-numeric: tabular-nums; }
-  .pay-instr { font-size: 14px; padding: 8px 12px; background: var(--panel-2); border-radius: 8px; margin-bottom: 6px; }
+  .settle-result .rank { color: var(--muted); font-size: 12px; width: 18px; flex: none; }
+  .settle-result .who { font-weight: 700; }
+  .settle-result.top .who { color: var(--gold); }
+  .settle-net {
+    margin-left: auto; padding: 4px 12px; border-radius: 999px;
+    font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .settle-net.pos { background: rgba(52,211,153,.15); }
+  .settle-net.neg { background: rgba(248,113,113,.15); }
+  .settle-net.muted { background: rgba(255,255,255,.05); }
+  .pay-flow {
+    display: flex; align-items: center; gap: 10px; padding: 11px 13px;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 11px; margin-bottom: 8px; font-size: 14px;
+  }
+  .pay-flow .arrow { color: var(--accent); font-weight: 800; }
+  .pay-flow .pamt { margin-left: auto; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .pay-flow.even { color: var(--muted); }
+
+  /* rules modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.62); z-index: 50;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 36px 16px; overflow: auto;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px; max-width: 540px; width: 100%; box-shadow: var(--shadow);
+  }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .modal-head h2 { margin: 0; font-size: 18px; text-transform: none; letter-spacing: 0; color: var(--text); }
+  .close-x { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; font-weight: 700; }
+  .close-x:hover { color: var(--text); border-color: var(--accent); }
+  .rules-section { margin-top: 20px; }
+  .sec-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
+  .rules-section table input { width: 88px; padding: 6px 8px; margin: 0 auto; text-align: center; }
+  .rules-inst-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+  .rules-inst-row span { font-size: 13px; color: var(--text); }
+  .rules-inst-row input { width: 88px; flex: none; text-align: center; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1><span class="pip"></span> Mahjong Chip Counter</h1>
+  <div class="app-head">
+    <h1><span class="pip"></span> Mahjong Chip Counter</h1>
+    <button class="ghost small" id="rulesBtn">⚙ Scoring</button>
+  </div>
 
   <!-- SETUP -->
   <div class="card" id="setupCard">
+    <div class="resume-bar hidden" id="resumeBar">
+      <span>A game is in progress on this device.</span>
+      <span class="ra">
+        <button class="small" id="resumeBtn">Resume</button>
+        <button class="ghost small" id="discardBtn">Discard</button>
+      </span>
+    </div>
     <h2>Setup</h2>
     <div class="grid4" id="setupGrid"></div>
     <div class="row" style="margin-top:14px; max-width:260px;">
@@ -284,19 +360,93 @@
 
 </div>
 
+<!-- RULES MODAL -->
+<div class="modal-overlay hidden" id="rulesModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Scoring</h2>
+      <button class="close-x" id="rulesClose">✕</button>
+    </div>
+
+    <div class="rules-section" style="margin-top:16px;">
+      <div class="sec-title">Preset</div>
+      <select id="rPreset"></select>
+    </div>
+
+    <div class="rules-section">
+      <div class="sec-title">Tai range</div>
+      <div class="row" style="max-width:260px;">
+        <div><label>Min tai</label><input type="number" id="rMinTai" min="1" /></div>
+        <div><label>Max tai</label><input type="number" id="rMaxTai" min="1" /></div>
+      </div>
+    </div>
+
+    <div class="rules-section">
+      <div class="sec-title">Payment per tai</div>
+      <table>
+        <thead><tr><th>Tai</th><th>Hu (one pays)</th><th>Zimo (each pays)</th></tr></thead>
+        <tbody id="rPayBody"></tbody>
+      </table>
+    </div>
+
+    <div class="rules-section">
+      <div class="sec-title">Instant payments (chips)</div>
+      <div id="rInstBody"></div>
+    </div>
+
+    <div class="actions" style="margin-top:22px;">
+      <button id="rulesSave">Save</button>
+      <button class="ghost" id="rulesReset">Reset to default</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SEATS = ["東", "南", "西", "北"];
-const ronPay  = t => 4 * Math.pow(2, t - 1);   // 4,8,16,32,64
-const zimoPay = t => 2 * Math.pow(2, t - 1);    // 2,4,8,16,32
 
-// Instant side-payments. mode "each" = each of 3 opponents pays amt; "one" = a single chosen payer pays amt.
-const INSTANT = {
-  yaoTarget:      { label: "Yao (targeted) — one player pays", amt: 2, mode: "one" },
-  yaoGangAll:     { label: "Yao/Gang (everyone) — each opponent pays", amt: 2, mode: "each" },
-  anyaoAngangAll: { label: "Anyao/Angang (everyone) — each opponent pays", amt: 4, mode: "each" },
-  anyaoTarget:    { label: "Anyao (targeted) — one player pays", amt: 4, mode: "one" },
-  gangDiscard:    { label: "Gang — one player pays", amt: 6, mode: "one" },
+// Instant side-payment definitions. mode "each" = each of 3 opponents pays; "one" = a single chosen payer pays.
+const INSTANT_DEFS = {
+  yaoTarget:      { label: "Yao (targeted) — one player pays", mode: "one" },
+  yaoGangAll:     { label: "Yao/Gang (everyone) — each opponent pays", mode: "each" },
+  anyaoAngangAll: { label: "Anyao/Angang (everyone) — each opponent pays", mode: "each" },
+  anyaoTarget:    { label: "Anyao (targeted) — one player pays", mode: "one" },
+  gangDiscard:    { label: "Gang — one player pays", mode: "one" },
 };
+
+function defPay(t) { return { ron: 4 * Math.pow(2, t - 1), zimo: 2 * Math.pow(2, t - 1) }; }
+const clone = o => JSON.parse(JSON.stringify(o));
+
+// Instant payments are shared across presets.
+const DEFAULT_INSTANT = { yaoTarget: 2, yaoGangAll: 2, anyaoAngangAll: 4, anyaoTarget: 4, gangDiscard: 6 };
+
+// Built-in scoring presets.
+const PRESETS = {
+  "1/2": {
+    name: "1/2 payout",
+    minTai: 1, maxTai: 5,
+    pay: { 1:{ron:4,zimo:2}, 2:{ron:8,zimo:4}, 3:{ron:16,zimo:8}, 4:{ron:32,zimo:16}, 5:{ron:64,zimo:32} },
+    instant: { ...DEFAULT_INSTANT },
+  },
+  "3/6": {
+    name: "3/6 payout",
+    minTai: 1, maxTai: 5,
+    pay: { 1:{ron:4,zimo:2}, 2:{ron:7,zimo:3}, 3:{ron:11,zimo:5}, 4:{ron:20,zimo:10}, 5:{ron:40,zimo:20} },
+    instant: { ...DEFAULT_INSTANT },
+  },
+};
+const DEFAULT_RULES = clone(PRESETS["1/2"]);
+
+function ensurePay(r) { for (let t = 1; t <= r.maxTai; t++) if (!r.pay[t]) r.pay[t] = defPay(t); }
+function loadRules() {
+  try { const s = localStorage.getItem("mahjongRules"); if (s) { const r = JSON.parse(s); ensurePay(r); return r; } } catch (e) {}
+  return clone(DEFAULT_RULES);
+}
+function saveRulesLS() { try { localStorage.setItem("mahjongRules", JSON.stringify(RULES)); } catch (e) {} }
+
+let RULES = loadRules();
+const ronPay  = t => RULES.pay[t].ron;
+const zimoPay = t => RULES.pay[t].zimo;
+const instAmt = k => RULES.instant[k];
 
 let state = {
   players: [],     // {name, chips, start}
@@ -329,6 +479,7 @@ function startGame() {
   });
   state.log = [];
   state.started = true;
+  state.prevChips = null;
   document.getElementById("setupCard").classList.add("hidden");
   document.getElementById("gameArea").classList.remove("hidden");
   fillSelects();
@@ -339,12 +490,14 @@ function startGame() {
 
 function buildInstantEvents() {
   const sel = document.getElementById("instEvent");
+  const prev = sel.value;
   sel.innerHTML = "";
-  Object.entries(INSTANT).forEach(([k, v]) => {
+  Object.entries(INSTANT_DEFS).forEach(([k, v]) => {
     const o = document.createElement("option");
-    o.value = k; o.textContent = `${v.label} (${v.amt})`;
+    o.value = k; o.textContent = `${v.label} (${instAmt(k)})`;
     sel.appendChild(o);
   });
+  if (prev) sel.value = prev;
   toggleInstPayer();
 }
 
@@ -364,7 +517,9 @@ function fillSelects() {
 function buildTaiPick() {
   const tp = document.getElementById("taiPick");
   tp.innerHTML = "";
-  for (let t = 1; t <= 5; t++) {
+  if (state.selTai < RULES.minTai) state.selTai = RULES.minTai;
+  if (state.selTai > RULES.maxTai) state.selTai = RULES.maxTai;
+  for (let t = RULES.minTai; t <= RULES.maxTai; t++) {
     const b = document.createElement("button");
     b.textContent = t;
     if (t === state.selTai) b.classList.add("on");
@@ -481,14 +636,14 @@ function instInputs() {
 
 function toggleInstPayer() {
   const { key } = instInputs();
-  const isOne = INSTANT[key].mode === "one";
+  const isOne = INSTANT_DEFS[key].mode === "one";
   document.getElementById("instPayerWrap").classList.toggle("hidden", !isOne);
   updateInstPreview();
 }
 
 function computeInstant(key, collector, payer, count) {
-  const ev = INSTANT[key];
-  const amt = ev.amt * count;
+  const ev = INSTANT_DEFS[key];
+  const amt = instAmt(key) * count;
   const d = [0,0,0,0];
   if (ev.mode === "one") {
     d[collector] += amt;
@@ -503,9 +658,9 @@ function computeInstant(key, collector, payer, count) {
 function updateInstPreview() {
   if (!state.started) return;
   const { key, collector, payer, count } = instInputs();
-  const ev = INSTANT[key];
+  const ev = INSTANT_DEFS[key];
   const line = document.getElementById("instPreview");
-  const amt = ev.amt * count;
+  const amt = instAmt(key) * count;
   const nm = i => state.players[i].name;
   if (ev.mode === "one") {
     if (collector === payer) { line.textContent = "⚠ Collector and payer can't be the same player."; return; }
@@ -517,7 +672,7 @@ function updateInstPreview() {
 
 function recordInstant() {
   const { key, collector, payer, count } = instInputs();
-  const ev = INSTANT[key];
+  const ev = INSTANT_DEFS[key];
   if (ev.mode === "one" && collector === payer) {
     alert("Collector and payer can't be the same player."); return;
   }
@@ -537,6 +692,39 @@ function undoLast() {
   render();
 }
 
+function deleteHand(idx) {
+  const h = state.log[idx];
+  if (!h) return;
+  if (!confirm("Delete this entry? Chip totals will be adjusted.")) return;
+  h.deltas.forEach((dv, i) => state.players[i].chips -= dv);
+  state.log.splice(idx, 1);
+  render();
+}
+
+// ---------- game auto-save ----------
+const GAME_KEY = "mahjongGame";
+function saveGame() {
+  if (!state.started) return;
+  try { localStorage.setItem(GAME_KEY, JSON.stringify({ players: state.players, log: state.log })); } catch (e) {}
+}
+function clearGame() { try { localStorage.removeItem(GAME_KEY); } catch (e) {} }
+function loadSavedGame() {
+  try { const s = localStorage.getItem(GAME_KEY); if (s) return JSON.parse(s); } catch (e) {}
+  return null;
+}
+function resumeGame(saved) {
+  state.players = saved.players;
+  state.log = saved.log || [];
+  state.started = true;
+  state.prevChips = null;
+  document.getElementById("setupCard").classList.add("hidden");
+  document.getElementById("gameArea").classList.remove("hidden");
+  fillSelects();
+  buildTaiPick();
+  buildInstantEvents();
+  render();
+}
+
 // ---------- render ----------
 function render() {
   // scoreboard
@@ -551,10 +739,12 @@ function render() {
     const cls = delta > 0 ? "pos" : delta < 0 ? "neg" : "muted";
     const sign = delta > 0 ? "+" : "";
     const deltaText = delta === 0 ? "–" : `${sign}${delta}`;
+    const changed = state.prevChips ? p.chips - state.prevChips[idx] : 0;
     const div = document.createElement("div");
     div.className = "pcard"
       + (!state.hideTotals && !allEqual && p.chips === maxC ? " leader" : "")
-      + (state.hideTotals && state.revealed.has(idx) ? " revealed" : "");
+      + (state.hideTotals && state.revealed.has(idx) ? " revealed" : "")
+      + (changed > 0 ? " flash-pos" : changed < 0 ? " flash-neg" : "");
     if (state.hideTotals) {
       div.onclick = () => {
         if (state.revealed.has(idx)) state.revealed.delete(idx);
@@ -567,6 +757,7 @@ function render() {
       <div class="delta ${cls}">${deltaText}</div>`;
     board.appendChild(div);
   });
+  state.prevChips = state.players.map(p => p.chips);
 
   // log
   const log = document.getElementById("log");
@@ -579,27 +770,33 @@ function render() {
       const item = document.createElement("div");
       item.className = "log-item";
       item.innerHTML = `<span class="desc"><span class="muted">#${realIdx+1}</span> &nbsp;${h.desc}</span>
-        <span class="amt">+${h.gain}</span>`;
+        <span class="log-right"><span class="amt">+${h.gain}</span><button class="del-x" title="Delete">✕</button></span>`;
+      item.querySelector(".del-x").onclick = () => deleteHand(realIdx);
       log.appendChild(item);
     });
   }
   updatePreview();
   updateInstPreview();
+  saveGame();
 }
 
 // ---------- settle ----------
 function settle() {
   const out = document.getElementById("settleOut");
   const bal = state.players.map(p => ({ name: p.name, net: p.chips - p.start, chips: p.chips }));
+  const ranked = [...bal].sort((a, b) => b.net - a.net);
 
-  let html = `<div style="margin-bottom:12px;">`;
-  bal.forEach(b => {
+  let html = `<div class="settle-sub">Final results</div>`;
+  ranked.forEach((b, i) => {
     const cls = b.net > 0 ? "pos" : b.net < 0 ? "neg" : "muted";
     const sign = b.net > 0 ? "+" : "";
-    html += `<div class="settle-line"><span>${b.name}</span>
-      <strong class="${cls}">${sign}${b.net} <span class="muted">(${b.chips} chips)</span></strong></div>`;
+    const top = b.net > 0 && i === 0 ? " top" : "";
+    html += `<div class="settle-result${top}">
+      <span class="rank">${i + 1}</span>
+      <span class="who">${b.name}</span>
+      <span class="settle-net ${cls}">${sign}${b.net}</span>
+    </div>`;
   });
-  html += `</div>`;
 
   // who pays whom — greedy settlement
   const debtors = bal.filter(b => b.net < 0).map(b => ({...b, net: -b.net})).sort((a,b)=>b.net-a.net);
@@ -608,20 +805,134 @@ function settle() {
   let di = 0, ci = 0;
   while (di < debtors.length && ci < creditors.length) {
     const pay = Math.min(debtors[di].net, creditors[ci].net);
-    transfers.push(`${debtors[di].name} pays ${creditors[ci].name} <strong>${pay}</strong>`);
+    transfers.push({ from: debtors[di].name, to: creditors[ci].name, amt: pay });
     debtors[di].net -= pay; creditors[ci].net -= pay;
     if (debtors[di].net === 0) di++;
     if (creditors[ci].net === 0) ci++;
   }
 
+  html += `<div class="settle-sub" style="margin-top:18px;">Payments</div>`;
   if (transfers.length) {
-    html += `<div style="margin:6px 0 4px; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1px;">Payments</div>`;
-    transfers.forEach(t => html += `<div class="pay-instr">${t}</div>`);
+    transfers.forEach(t => html += `<div class="pay-flow">
+      <span class="who">${t.from}</span><span class="arrow">→</span><span class="who">${t.to}</span>
+      <span class="pamt">${t.amt}</span>
+    </div>`);
   } else {
-    html += `<div class="pay-instr">Everyone is even — no payments needed.</div>`;
+    html += `<div class="pay-flow even">Everyone is even — no payments needed.</div>`;
   }
   out.innerHTML = html;
 }
+
+// ---------- rules editor ----------
+let editRules = null;
+
+function buildPresetSelect() {
+  const sel = document.getElementById("rPreset");
+  sel.innerHTML = "";
+  Object.entries(PRESETS).forEach(([k, p]) => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = p.name;
+    sel.appendChild(o);
+  });
+  const co = document.createElement("option");
+  co.value = "__custom"; co.textContent = "Custom";
+  sel.appendChild(co);
+}
+function ruleSig(x) {
+  const pay = {};
+  for (let t = 1; t <= x.maxTai; t++) { const p = x.pay[t] || defPay(t); pay[t] = [Number(p.ron), Number(p.zimo)]; }
+  const inst = {};
+  Object.keys(INSTANT_DEFS).sort().forEach(k => inst[k] = Number(x.instant[k]));
+  return JSON.stringify({ min: Number(x.minTai), max: Number(x.maxTai), pay, inst });
+}
+function presetKeyFor(r) {
+  for (const [k, p] of Object.entries(PRESETS)) if (ruleSig(p) === ruleSig(r)) return k;
+  return "__custom";
+}
+function fillRuleFields() {
+  document.getElementById("rMinTai").value = editRules.minTai;
+  document.getElementById("rMaxTai").value = editRules.maxTai;
+  renderPayRows();
+  renderInstRows();
+}
+
+function openRules() {
+  editRules = clone(RULES);
+  ensurePay(editRules);
+  buildPresetSelect();
+  document.getElementById("rPreset").value = presetKeyFor(editRules);
+  fillRuleFields();
+  document.getElementById("rulesModal").classList.remove("hidden");
+}
+function closeRules() { document.getElementById("rulesModal").classList.add("hidden"); }
+
+function renderPayRows() {
+  const body = document.getElementById("rPayBody");
+  body.innerHTML = "";
+  for (let t = 1; t <= editRules.maxTai; t++) {
+    const p = editRules.pay[t] || defPay(t);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="tai">${t}</td>
+      <td><input type="number" id="rPayRon${t}" value="${p.ron}" /></td>
+      <td><input type="number" id="rPayZimo${t}" value="${p.zimo}" /></td>`;
+    body.appendChild(tr);
+  }
+}
+function renderInstRows() {
+  const body = document.getElementById("rInstBody");
+  body.innerHTML = "";
+  Object.entries(INSTANT_DEFS).forEach(([k, v]) => {
+    const row = document.createElement("div");
+    row.className = "rules-inst-row";
+    row.innerHTML = `<span>${v.label}</span>
+      <input type="number" id="rInst_${k}" value="${editRules.instant[k]}" />`;
+    body.appendChild(row);
+  });
+}
+function readEditor() {
+  editRules.minTai = Math.max(1, parseInt(document.getElementById("rMinTai").value) || 1);
+  editRules.maxTai = Math.max(editRules.minTai, parseInt(document.getElementById("rMaxTai").value) || editRules.minTai);
+  for (let t = 1; t <= 50; t++) {
+    const r = document.getElementById("rPayRon" + t), z = document.getElementById("rPayZimo" + t);
+    if (r && z) editRules.pay[t] = { ron: parseInt(r.value) || 0, zimo: parseInt(z.value) || 0 };
+  }
+  Object.keys(INSTANT_DEFS).forEach(k => {
+    const el = document.getElementById("rInst_" + k);
+    if (el) editRules.instant[k] = parseInt(el.value) || 0;
+  });
+}
+
+document.getElementById("rPreset").addEventListener("change", e => {
+  if (e.target.value === "__custom") return;
+  editRules = clone(PRESETS[e.target.value]);
+  fillRuleFields();
+});
+document.getElementById("rMaxTai").addEventListener("input", () => {
+  readEditor(); ensurePay(editRules); renderPayRows();
+});
+// any manual field edit switches the preset selector to "Custom"
+document.getElementById("rulesModal").addEventListener("input", e => {
+  if (e.target.id !== "rPreset") document.getElementById("rPreset").value = "__custom";
+});
+document.getElementById("rulesBtn").onclick = openRules;
+document.getElementById("rulesClose").onclick = closeRules;
+document.getElementById("rulesModal").addEventListener("click", e => {
+  if (e.target.id === "rulesModal") closeRules();
+});
+document.getElementById("rulesReset").onclick = () => {
+  editRules = clone(DEFAULT_RULES);
+  document.getElementById("rPreset").value = presetKeyFor(editRules);
+  fillRuleFields();
+};
+document.getElementById("rulesSave").onclick = () => {
+  readEditor();
+  ensurePay(editRules);
+  RULES = editRules;
+  saveRulesLS();
+  buildInstantEvents();
+  if (state.started) { buildTaiPick(); render(); }
+  closeRules();
+};
 
 // ---------- wire up ----------
 document.getElementById("instEvent").addEventListener("change", toggleInstPayer);
@@ -643,10 +954,22 @@ document.getElementById("settleBtn").onclick = settle;
 document.getElementById("resetBtn").onclick = () => {
   if (!confirm("Start a new game? Current standings will be cleared.")) return;
   state.started = false;
+  clearGame();
   document.getElementById("gameArea").classList.add("hidden");
   document.getElementById("setupCard").classList.remove("hidden");
   document.getElementById("settleOut").innerHTML = "";
 };
+
+// resume an in-progress game saved on this device
+const savedGame = loadSavedGame();
+if (savedGame && savedGame.players && savedGame.players.length) {
+  document.getElementById("resumeBar").classList.remove("hidden");
+  document.getElementById("resumeBtn").onclick = () => resumeGame(savedGame);
+  document.getElementById("discardBtn").onclick = () => {
+    clearGame();
+    document.getElementById("resumeBar").classList.add("hidden");
+  };
+}
 
 buildSetup();
 </script>
